@@ -1,5 +1,14 @@
-// Enhanced ProtectedRoute with state persistence fix
 // src/components/service-blueprinting/login/ProtectedRoute.jsx
+// AUTH DISABLED - to re-enable, remove the pass-through below and uncomment the original.
+
+// PASS-THROUGH: remove this block to re-enable auth
+export default function ProtectedRoute({ children }) {
+  return children
+}
+
+/* ============================================================
+   ORIGINAL PROTECTED ROUTE - uncomment to restore login
+   ============================================================
 
 import React, { useState, useEffect } from 'react'
 import { useHistory } from '@docusaurus/router'
@@ -13,270 +22,84 @@ export default function ProtectedRoute({ children }) {
   const { loading, user } = useAuth()
   const history = useHistory()
   const [isLogoutHovered, setIsLogoutHovered] = useState(false)
+  const [wasRecentlyAuthenticated, setWasRecentlyAuthenticated] = useState(false)
 
-  // FIXED: Add state to track if user was recently authenticated
-  const [wasRecentlyAuthenticated, setWasRecentlyAuthenticated] =
-    useState(false)
-
-  // FIXED: Check browser storage for recent authentication
   useEffect(() => {
     const userEmail = getItem('userEmail', '')
     const userId = getItem('userId', '')
-
-    if (userEmail && userId) {
-      setWasRecentlyAuthenticated(true)
-      console.log(
-        '[ProtectedRoute] Found recent authentication in storage:',
-        userEmail,
-      )
-    }
+    if (userEmail && userId) setWasRecentlyAuthenticated(true)
   }, [])
 
-  // FIXED: Update state when user changes
   useEffect(() => {
-    if (user) {
-      setWasRecentlyAuthenticated(true)
-      console.log('[ProtectedRoute] User authenticated:', user.email)
-    }
+    if (user) setWasRecentlyAuthenticated(true)
   }, [user])
 
-  // FIXED: Specific path detection that matches Root.js logic
   const currentPath = window.location.pathname
 
   const isProtectedPath = () => {
-    // Login page is never protected
     if (currentPath === '/learning/login') return false
-
-    // Public landing pages (exact matches)
     if (currentPath === '/learning/service-blueprinting') return false
-    if (currentPath === '/learning/') return false
-    if (currentPath === '/learning') return false
-
-    // Protected: specific course sub-paths that have AuthContext
+    if (currentPath === '/learning/' || currentPath === '/learning') return false
     if (currentPath.startsWith('/learning/service-blueprinting/')) return true
     if (currentPath.startsWith('/learning/automation-essentials')) return true
-
-    // All other /learning/* paths default to public
     return false
   }
 
-  console.log('[ProtectedRoute] Enhanced check:', {
-    currentPath,
-    isProtectedPath: isProtectedPath(),
-    loading,
-    user: !!user,
-    wasRecentlyAuthenticated,
-  })
+  if (!isProtectedPath()) return children
 
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      console.log('[ProtectedRoute] Logout clicked')
-      setWasRecentlyAuthenticated(false)
-      await signOut(auth)
-      console.log(
-        '[ProtectedRoute] Logout successful, redirecting to Learning Hub',
-      )
-      history.push('/learning/')
-    } catch (error) {
-      console.error('[ProtectedRoute] Logout error:', error)
-      history.push('/learning/')
-    }
-  }
-
-  // Non-protected paths - just render children
-  if (!isProtectedPath()) {
-    console.log('[ProtectedRoute] Non-protected path, rendering children')
-    return children
-  }
-
-  // Protected paths - check authentication
-  console.log('[ProtectedRoute] Protected path detected')
-
-  // FIXED: If still loading BUT we know user was recently authenticated, show loading instead of login
   if (loading) {
-    if (wasRecentlyAuthenticated) {
-      console.log(
-        '[ProtectedRoute] Loading but recently authenticated, showing loading...',
-      )
-      return (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '200px',
-            fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-          }}
-        >
-          <div>Loading authentication...</div>
-        </div>
-      )
-    } else {
-      console.log(
-        '[ProtectedRoute] Loading with no recent auth, showing loading...',
-      )
-      return (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '200px',
-            fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-          }}
-        >
-          <div>Loading authentication...</div>
-        </div>
-      )
-    }
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center',
+        minHeight: '200px', fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif' }}>
+        <div>Loading authentication...</div>
+      </div>
+    )
   }
 
-  // FIXED: If no user but we know they were recently authenticated, give it a moment
   if (!user && wasRecentlyAuthenticated) {
-    console.log(
-      '[ProtectedRoute] No user but recently authenticated, showing brief loading...',
-    )
-
-    // Give it a brief moment for auth to resolve, then show login if still no user
-    setTimeout(() => {
-      if (!user) {
-        console.log('[ProtectedRoute] Auth timeout, clearing recent auth flag')
-        setWasRecentlyAuthenticated(false)
-      }
-    }, 2000) // 2 second grace period
-
+    setTimeout(() => { if (!user) setWasRecentlyAuthenticated(false) }, 2000)
     return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '200px',
-          fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center',
+        minHeight: '200px', fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif' }}>
         <div>Verifying authentication...</div>
       </div>
     )
   }
 
-  // Not authenticated - show login overlay
   if (!user) {
-    console.log('[ProtectedRoute] No user, showing login overlay')
-
-    // Save redirect URL
     try {
-      if (currentPath !== '/learning/login') {
-        sessionStorage.setItem('redirectUrl', currentPath)
-        console.log('[ProtectedRoute] Saved redirect URL:', currentPath)
-      }
-    } catch (error) {
-      console.error('[ProtectedRoute] Error saving redirect URL:', error)
-    }
+      if (currentPath !== '/learning/login') sessionStorage.setItem('redirectUrl', currentPath)
+    } catch (error) {}
 
-    // Determine course name for personalized message
     let courseName = 'this content'
     let courseIcon = '🔒'
-
-    if (currentPath.includes('service-blueprinting')) {
-      courseName = 'Service Blueprinting'
-      courseIcon = '🔰'
-    } else if (currentPath.includes('automation-essentials')) {
-      courseName = 'Automation Essentials'
-      courseIcon = '⚡'
-    }
+    if (currentPath.includes('service-blueprinting')) { courseName = 'Service Blueprinting'; courseIcon = '🔰' }
+    else if (currentPath.includes('automation-essentials')) { courseName = 'Automation Essentials'; courseIcon = '⚡' }
 
     return (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: 'var(--brand-white)',
-            padding: '3rem',
-            borderRadius: '16px',
-            border: '2px solid var(--brand-blue-400)',
-            boxShadow: '0 0 30px rgba(0, 102, 255, 0.3)',
-            textAlign: 'center',
-            maxWidth: '500px',
-            margin: '1rem',
-          }}
-        >
-          <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>
-            {courseIcon}
-          </div>
-
-          <h2
-            style={{
-              color: 'var(--brand-black-700)',
-              margin: '0 0 1rem 0',
-              fontSize: '2rem',
-              fontWeight: '600',
-            }}
-          >
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', zIndex: 9999, fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif' }}>
+        <div style={{ backgroundColor: 'var(--brand-white)', padding: '3rem', borderRadius: '16px',
+          border: '2px solid var(--brand-blue-400)', boxShadow: '0 0 30px rgba(0, 102, 255, 0.3)',
+          textAlign: 'center', maxWidth: '500px', margin: '1rem' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>{courseIcon}</div>
+          <h2 style={{ color: 'var(--brand-black-700)', margin: '0 0 1rem 0', fontSize: '2rem', fontWeight: '600' }}>
             Login Required
           </h2>
-
-          <p
-            style={{
-              color: 'var(--brand-grey-600)',
-              margin: '0 0 2rem 0',
-              fontSize: '1.2rem',
-              lineHeight: '1.6',
-            }}
-          >
+          <p style={{ color: 'var(--brand-grey-600)', margin: '0 0 2rem 0', fontSize: '1.2rem', lineHeight: '1.6' }}>
             {courseName === 'this content'
               ? 'This content requires you to login to continue.'
               : `The ${courseName} course requires you to login to continue.`}
           </p>
-
-          <Link
-            to='/learning/login'
-            style={{
-              display: 'inline-block',
-              backgroundColor: 'var(--brand-blue)',
-              color: 'var(--brand-white)',
-              padding: '1rem 2.5rem',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              fontSize: '1.2rem',
-              fontWeight: '600',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 12px rgba(0, 102, 255, 0.2)',
-            }}
-          >
+          <Link to='/learning/login' style={{ display: 'inline-block', backgroundColor: 'var(--brand-blue)',
+            color: 'var(--brand-white)', padding: '1rem 2.5rem', borderRadius: '8px',
+            textDecoration: 'none', fontSize: '1.2rem', fontWeight: '600' }}>
             Login to Continue
           </Link>
-
-          <p
-            style={{
-              color: 'var(--brand-grey-500)',
-              margin: '2rem 0 0 0',
-              fontSize: '0.95rem',
-            }}
-          >
+          <p style={{ color: 'var(--brand-grey-500)', margin: '2rem 0 0 0', fontSize: '0.95rem' }}>
             Don't have an account?{' '}
-            <Link
-              to='/learning/login'
-              style={{
-                color: 'var(--brand-blue)',
-                textDecoration: 'none',
-                fontWeight: '500',
-              }}
-            >
+            <Link to='/learning/login' style={{ color: 'var(--brand-blue)', textDecoration: 'none', fontWeight: '500' }}>
               Sign up here
             </Link>
           </p>
@@ -285,42 +108,34 @@ export default function ProtectedRoute({ children }) {
     )
   }
 
-  // Authenticated - show content with logout button
-  console.log(
-    '[ProtectedRoute] User authenticated, showing content with logout button',
-  )
+  const handleLogout = async () => {
+    try {
+      setWasRecentlyAuthenticated(false)
+      await signOut(auth)
+      history.push('/learning/')
+    } catch (error) {
+      history.push('/learning/')
+    }
+  }
 
   return (
     <>
-      {/* Logout button */}
-      <button
-        onClick={handleLogout}
+      <button onClick={handleLogout}
         onMouseEnter={() => setIsLogoutHovered(true)}
         onMouseLeave={() => setIsLogoutHovered(false)}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
+        style={{ position: 'fixed', top: '20px', right: '20px',
           backgroundColor: isLogoutHovered ? '#dc2626' : '#0066cc',
-          color: 'white',
-          border: '2px solid white',
-          borderRadius: '8px',
-          padding: '0.8rem 1.5rem',
-          fontSize: '1rem',
-          fontWeight: '700',
-          cursor: 'pointer',
-          zIndex: 99999,
-          transition: 'all 0.3s ease',
+          color: 'white', border: '2px solid white', borderRadius: '8px',
+          padding: '0.8rem 1.5rem', fontSize: '1rem', fontWeight: '700',
+          cursor: 'pointer', zIndex: 99999, transition: 'all 0.3s ease',
           boxShadow: '0 4px 15px rgba(0, 102, 204, 0.4)',
-          fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-        }}
-        title={`Logout ${user.email}`}
-      >
+          fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif' }}
+        title={`Logout ${user.email}`}>
         🚪 Logout
       </button>
-
-      {/* Page content */}
       {children}
     </>
   )
 }
+
+============================================================ */

@@ -1,4 +1,14 @@
 // src/components/Forms/utils/DomainVerification.jsx
+// AUTH DISABLED - to re-enable, remove the pass-through below and uncomment the original.
+
+// PASS-THROUGH: remove this block to re-enable auth
+const DomainVerification = ({ children }) => children
+export default DomainVerification
+
+/* ============================================================
+   ORIGINAL DOMAIN VERIFICATION - uncomment to restore login
+   ============================================================
+
 import React from 'react'
 import { useAuth } from '@site/src/contexts/AuthContext'
 
@@ -9,14 +19,10 @@ const DomainVerification = ({
 }) => {
   const { user } = useAuth()
 
-  // Brand-compliant styling for message containers
   const messageContainerStyle = {
-    padding: '1.5rem',
-    borderRadius: '8px',
-    textAlign: 'center',
+    padding: '1.5rem', borderRadius: '8px', textAlign: 'center',
     fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-    fontSize: '1.1rem',
-    lineHeight: '1.6',
+    fontSize: '1.1rem', lineHeight: '1.6',
   }
 
   const loginPromptStyle = {
@@ -38,12 +44,7 @@ const DomainVerification = ({
   if (!user) {
     return (
       <div style={loginPromptStyle}>
-        <p
-          style={{
-            margin: 0,
-            fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-          }}
-        >
+        <p style={{ margin: 0, fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif' }}>
           Please log in to view this content.
         </p>
       </div>
@@ -56,12 +57,7 @@ const DomainVerification = ({
   if (!hasAccess) {
     return (
       <div style={accessDeniedStyle}>
-        <p
-          style={{
-            margin: 0,
-            fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif',
-          }}
-        >
+        <p style={{ margin: 0, fontFamily: 'SeasonMix, system-ui, -apple-system, sans-serif' }}>
           {fallbackMessage}
         </p>
       </div>
@@ -72,3 +68,5 @@ const DomainVerification = ({
 }
 
 export default DomainVerification
+
+============================================================ */

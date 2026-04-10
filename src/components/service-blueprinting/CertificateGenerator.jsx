@@ -397,7 +397,7 @@ const CertificateGenerator = () => {
                   <div style={{ textAlign: 'center', width: '40%' }}>
                     <div className='pdf-only-logo-container'>
                       <img
-                        src='/img/resolve-RGB-transparent.png'
+                        src='/img/resolve_logo.png'
                         alt='Resolve Logo'
                         className='pdf-only-logo'
                         style={{
